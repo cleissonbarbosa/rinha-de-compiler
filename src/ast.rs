@@ -242,6 +242,44 @@ impl Element for Tuple {
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
+pub struct RecordField {
+    pub name: crate::parser::Var,
+    pub value: Box<Term>,
+    pub location: Location,
+}
+
+impl Element for RecordField {
+    fn location(&self) -> &Location {
+        &self.location
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Record {
+    pub fields: Vec<RecordField>,
+    pub location: Location,
+}
+
+impl Element for Record {
+    fn location(&self) -> &Location {
+        &self.location
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Field {
+    pub value: Box<Term>,
+    pub name: crate::parser::Var,
+    pub location: Location,
+}
+
+impl Element for Field {
+    fn location(&self) -> &Location {
+        &self.location
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
 #[serde(tag = "kind")]
 pub enum Term {
     Error(Error),
@@ -257,6 +295,8 @@ pub enum Term {
     Second(Second),
     Bool(Bool),
     Tuple(Tuple),
+    Record(Record),
+    Field(Field),
     Var(crate::parser::Var),
 }
 
@@ -277,6 +317,8 @@ impl Element for Term {
             Term::If(arg0) => &arg0.location,
             Term::Bool(arg0) => &arg0.location,
             Term::Tuple(arg0) => arg0.location(),
+            Term::Record(arg0) => arg0.location(),
+            Term::Field(arg0) => arg0.location(),
         }
     }
 }

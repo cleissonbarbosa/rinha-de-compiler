@@ -256,6 +256,50 @@ second((1, 2))
 
 Quando o second for chamado com algo que não é uma tupla ele deve dar um erro de runtime.
 
+### Record (Registro)
+
+`Record` é uma extensão opcional para representar estruturas nomeadas no AST.
+No fonte ela é escrita como:
+
+```javascript
+record { method: "GET", path: "/ready", ok: true }
+```
+
+Ela tem os seguintes elementos:
+
+| Nome     | Tipo                  |
+| -------- | --------------------- |
+| kind     | String                |
+| fields   | [[RecordField](#recordfield-campo-de-registro)] |
+| location | [Location](#location) |
+
+### RecordField (Campo de registro)
+
+`RecordField` representa um campo dentro de um `Record`.
+
+| Nome     | Tipo                  |
+| -------- | --------------------- |
+| name     | [Parameter](#parameter) |
+| value    | Term                  |
+| location | [Location](#location) |
+
+### Field (Acesso por campo)
+
+`Field` é o acesso a um campo de um registro, com a sintaxe:
+
+```javascript
+req.method
+```
+
+Ela tem os seguintes elementos:
+
+| Nome     | Tipo                  |
+| -------- | --------------------- |
+| kind     | String                |
+| value    | Term                  |
+| name     | [Parameter](#parameter) |
+| location | [Location](#location) |
+
 ### Print (Função de printar para o standard output)
 
 `Print` é a chamada da função de printar para o standard output. Ela é definida por:

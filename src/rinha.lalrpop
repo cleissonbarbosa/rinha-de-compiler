@@ -36,6 +36,11 @@ Semi: std::string::String = {
 Primary: crate::ast::Term = {
   "(" <Term> ")" => <>,
 
+  <s: @L> "record" "{" <fields:Sep<",", RecordField>> "}" <e: @R> => crate::ast::Term::Record(crate::ast::Record {
+    fields,
+    location: crate::ast::Location::new(s, e, filename),
+  }),
+
   <s: @L> "true" <e: @R> => crate::ast::Term::Bool(crate::ast::Bool {
     value: true,
     location: crate::ast::Location::new(s, e, filename),
@@ -85,24 +90,13 @@ FactorOp: crate::ast::BinaryOp = {
 
 Factor: crate::ast::Term = {
   Apply,
-  <s: @L> <value:Apply> "." <name:Reference> <e: @R> => {
-    // Report the error
-    errors.push(lalrpop_util::ErrorRecovery {
-        dropped_tokens: vec![],
-        error: lalrpop_util::ParseError::User {
-            error: crate::parser::InnerError::UnsupportedRecordIndex {
-                err_span: name.location.into(),
-            }
-        },
-    });
-
-    crate::ast::Term::Error(crate::ast::Error {
-      message: format!("unsupported record indexing `{}`", name.text),
-      full_text: (&input[s..e]).to_string(),
-      location: crate::ast::Location::new(s, e, filename),
-    })
-  },
-  <s: @L> <a:Apply> <op:FactorOp> <b:Factor> <e: @R> => crate::ast::Term::Binary(crate::ast::Binary {
+  <s: @L> <value:Apply> "." <name:Reference> <e: @R> => crate::ast::Term::Field(crate::ast::Field {
+    value: value.into(),
+    name,
+    location: crate::ast::Location::new(s, e, filename),
+  }),
+  // Left-associative: `a * b / c` parses as `(a * b) / c`.
+  <s: @L> <a:Factor> <op:FactorOp> <b:Apply> <e: @R> => crate::ast::Term::Binary(crate::ast::Binary {
     location: crate::ast::Location::new(s, e, filename),
     op,
     lhs: a.into(),
@@ -117,7 +111,8 @@ ArithmeticOp: crate::ast::BinaryOp = {
 
 Arithmetic: crate::ast::Term = {
   Factor,
-  <s: @L> <a:Factor> <op:ArithmeticOp> <b:Arithmetic> <e: @R> => crate::ast::Term::Binary(crate::ast::Binary {
+  // Left-associative: `a - b - c` parses as `(a - b) - c`.
+  <s: @L> <a:Arithmetic> <op:ArithmeticOp> <b:Factor> <e: @R> => crate::ast::Term::Binary(crate::ast::Binary {
     location: crate::ast::Location::new(s, e, filename),
     op,
     lhs: a.into(),
@@ -139,7 +134,8 @@ LogicalOp: crate::ast::BinaryOp = {
 Logical: crate::ast::Term = {
   Arithmetic,
 
-  <s: @L> <a:Arithmetic> <op:LogicalOp> <b:Logical> <e: @R> => crate::ast::Term::Binary(crate::ast::Binary {
+  // Left-associative: `a == b == c` parses as `(a == b) == c`.
+  <s: @L> <a:Logical> <op:LogicalOp> <b:Arithmetic> <e: @R> => crate::ast::Term::Binary(crate::ast::Binary {
     location: crate::ast::Location::new(s, e, filename),
     op,
     lhs: a.into(),
@@ -221,6 +217,14 @@ Text: std::string::String = {
 Reference: crate::parser::Var = {
   <s: @L> <text:Text> <e: @R> => crate::parser::Var {
     text: text.to_string(),
+    location: crate::ast::Location::new(s, e, filename),
+  }
+};
+
+RecordField: crate::ast::RecordField = {
+  <s: @L> <name:Reference> ":" <value:Term> <e: @R> => crate::ast::RecordField {
+    name,
+    value: value.into(),
     location: crate::ast::Location::new(s, e, filename),
   }
 };
